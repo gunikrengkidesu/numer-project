@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { REGISTRY } from '../core/registry.js'
-import { records, pending, repository } from '../db'
+import { records, pending, repository, dbError } from '../db'
 
 const emit = defineEmits(['load'])
 const filter = ref('ทั้งหมด')
@@ -26,6 +26,7 @@ const clearAll = () => records.value.length && confirm('ล้างประว
       </div>
       <button class="sm" @click="clearAll">ล้างประวัติทั้งหมด</button>
     </div>
+    <div v-if="dbError" class="er" style="margin-bottom: 8px">⚠ {{ dbError }}</div>
     <div v-if="!items.length" class="note">ยังไม่มีประวัติการคำนวณ</div>
     <div v-else class="scroll" style="max-height: none">
       <table>

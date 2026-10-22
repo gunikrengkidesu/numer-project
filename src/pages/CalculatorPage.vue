@@ -62,6 +62,7 @@ watch(pending, it => { if (it) { select(it.cat, it.method, JSON.parse(it.input))
 </script>
 
 <template>
+  <div>
   <div class="card">
     <div class="tabs">
       <button v-for="c in Object.keys(REGISTRY)" :key="c" class="tab" :class="{ on: c === cat }" @click="select(c)">{{ c }}</button>
@@ -81,4 +82,5 @@ watch(pending, it => { if (it) { select(it.cat, it.method, JSON.parse(it.input))
   </div>
   <div v-if="error" class="card er">⚠ {{ error }}</div>
   <ResultView :result="result" />
+  </div>
 </template>

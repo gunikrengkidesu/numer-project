@@ -15,7 +15,7 @@ const domain = (vals, include0, padRatio) => {
   const p = (hi - lo) * padRatio
   return [lo - p, hi + p]
 }
-const xd = computed(() => domain(allPts.value.map(p => p.x), false, 0.06))
+const xd = computed(() => domain([...allPts.value.map(p => p.x), ...(props.chart.xRange ?? [])], false, 0.06))
 // เส้นโค้ง f(x) จริง (เส้นเรียบ) ในช่วง x ที่ iteration ผ่านมา
 const curvePts = computed(() => {
   const c = props.chart.curve
@@ -34,11 +34,19 @@ function ticks([lo, hi], count = 6) {
   return out
 }
 const xt = computed(() => ticks(xd.value, 8)), yt = computed(() => ticks(yd.value, 6))
+// เส้นกริดย่อย (กึ่งกลางระหว่างเส้นกริดหลัก)
+const minor = (t, [lo, hi]) => {
+  if (t.length < 2) return []
+  const s = t[1] - t[0], out = []
+  for (let v = t[0] - s / 2; v <= hi + 1e-12; v += s) if (v >= lo) out.push(+v.toFixed(10))
+  return out
+}
+const xm = computed(() => minor(xt.value, xd.value)), ym = computed(() => minor(yt.value, yd.value))
 const tick = v => (Math.abs(v) >= 1e5 || (v !== 0 && Math.abs(v) < 1e-3) ? v.toExponential(1) : +v.toPrecision(6))
 const path = s => s.points.map((p, i) => `${i ? 'L' : 'M'}${X(p.x).toFixed(1)} ${Y(p.y).toFixed(1)}`).join(' ')
 const curvePath = computed(() => curvePts.value.map(([x, y], i) => `${i ? 'L' : 'M'}${X(x).toFixed(1)} ${Y(y).toFixed(1)}`).join(' '))
 const legend = computed(() => props.chart.curve
-  ? [{ name: 'f(x)', c: 'var(--ac)' }, { name: 'ลำดับ iteration', c: 'var(--ok)' }, { name: 'จุดแต่ละ iteration', c: 'var(--er)' }]
+  ? [{ name: 'f(x)', c: 'var(--ac)' }, { name: 'เส้นเชื่อมจุดสำคัญ', c: 'var(--ok)' }, { name: 'จุดสำคัญ', c: 'var(--er)' }]
   : multi.value ? props.chart.series.map((s, i) => ({ name: s.name, c: PALETTE[i % PALETTE.length] })) : [])
 const color = i => (multi.value ? PALETTE[i % PALETTE.length] : 'var(--ok)')
 const dot = i => (multi.value ? PALETTE[i % PALETTE.length] : 'var(--er)')
@@ -65,6 +73,9 @@ const tipStyle = computed(() => hover.value && {
     <div v-if="legend.length" class="legend"><span v-for="l in legend" :key="l.name"><i :style="{ background: l.c }" />{{ l.name }}</span></div>
     <svg ref="svg" :viewBox="`0 0 ${W} ${H}`" @pointermove="onMove" @pointerleave="hover = null">
       <g>
+        <rect :x="M.l" :y="M.t" :width="W - M.l - M.r" :height="H - M.t - M.b" class="frame" />
+        <line v-for="t in xm" :key="'mx' + t" :x1="X(t)" :x2="X(t)" :y1="M.t" :y2="H - M.b" class="gridm" />
+        <line v-for="t in ym" :key="'my' + t" :x1="M.l" :x2="W - M.r" :y1="Y(t)" :y2="Y(t)" class="gridm" />
         <line v-for="t in xt" :key="'vx' + t" :x1="X(t)" :x2="X(t)" :y1="M.t" :y2="H - M.b" class="grid" />
         <line v-for="t in yt" :key="'hy' + t" :x1="M.l" :x2="W - M.r" :y1="Y(t)" :y2="Y(t)" class="grid" />
         <line v-if="chart.zero && yd[0] < 0 && yd[1] > 0" :x1="M.l" :x2="W - M.r" :y1="Y(0)" :y2="Y(0)" class="zero" />
@@ -76,7 +87,7 @@ const tipStyle = computed(() => hover.value && {
       <path v-if="curvePath" :d="curvePath" fill="none" style="stroke: var(--ac)" stroke-width="2.2" />
       <g v-for="(s, i) in chart.series" :key="s.name">
         <path :d="path(s)" fill="none" :style="{ stroke: color(i) }" stroke-width="1.6" :stroke-dasharray="chart.curve ? '6 4' : null" />
-        <circle v-for="(p, j) in s.points" :key="j" :cx="X(p.x)" :cy="Y(p.y)" :r="dense ? 1.8 : 3.6" :style="{ fill: dot(i) }" />
+        <circle v-for="(p, j) in s.points" :key="j" :cx="X(p.x)" :cy="Y(p.y)" :r="5" :style="{ fill: dot(i) }" />
       </g>
       <g v-if="hover">
         <line :x1="hover.cx" :x2="hover.cx" :y1="M.t" :y2="H - M.b" class="cross" />
@@ -93,7 +104,9 @@ const tipStyle = computed(() => hover.value && {
 <style scoped>
 .chart { position: relative; margin: 8px 0 14px }
 svg { width: 100%; height: auto; display: block; touch-action: none }
-.grid { stroke: var(--bd); stroke-width: 1 }
+.grid { stroke: var(--mu); stroke-width: 1; opacity: .3 }
+.gridm { stroke: var(--mu); stroke-width: 1; opacity: .14; stroke-dasharray: 3 4 }
+.frame { fill: none; stroke: var(--mu); opacity: .45 }
 .zero { stroke: var(--mu); stroke-width: 1.4 }
 .tick { fill: var(--mu); font-size: 12px; font-family: "JetBrains Mono", monospace }
 .axis { fill: var(--mu); font-size: 13px }

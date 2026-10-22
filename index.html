@@ -7,7 +7,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="app"></div>
+  <div id="app">
+    <p id="boot" style="font-family: sans-serif; padding: 24px; color: #666">
+      กำลังโหลด… ถ้าข้อความนี้ค้างอยู่ แสดงว่า JavaScript ไม่ทำงาน — ให้เปิดผ่าน <code>npm run dev</code> (http://localhost:5173)
+      หรือ <code>npm start</code> (http://localhost:3000) ห้ามดับเบิลคลิกเปิดไฟล์ index.html ตรง ๆ แล้วกด F12 ดูแท็บ Console
+    </p>
+  </div>
+  <script>
+    window.addEventListener('error', function (e) {
+      var b = document.getElementById('boot')
+      if (b) b.insertAdjacentHTML('afterend', '<pre style="color:#b42318;padding:0 24px;white-space:pre-wrap">Error: ' + (e.message || e) + '</pre>')
+    })
+  </script>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

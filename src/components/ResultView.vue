@@ -51,7 +51,7 @@ watch(r, async v => {
     </template>
 
     <template v-if="chart">
-      <div class="note" style="margin-top: 10px">กราฟค่าในแต่ละ iteration — เลื่อน cursor ไปที่จุดเพื่อดูค่า</div>
+      <div class="note" style="margin-top: 10px">กราฟแสดงจุดสำคัญ (เริ่มต้น · ระหว่างทาง · ผลลัพธ์) — เลื่อน cursor ไปที่จุดเพื่อดูค่า ตารางด้านล่างแสดงครบทุก iteration</div>
       <IterationChart :chart="chart" />
     </template>
     <canvas v-if="r.plot" ref="canvas" />

@@ -13,7 +13,7 @@ const isRoot = computed(() => r.value?.kind === 'root')
 const isValue = computed(() => r.value?.kind === 'value')
 const chart = computed(() => buildChart(r.value))
 const fmtM = M => {
-  const t = M.map(row => row.map(v => String(fmt(v, 4)))), w = Math.max(...t.flat().map(s => s.length))
+  const t = M.map(row => row.map(v => String(fmt(v)))), w = Math.max(...t.flat().map(s => s.length))
   return t.map(row => row.map(s => s.padStart(w)).join('  ')).join('\n')
 }
 
@@ -33,6 +33,7 @@ watch(r, async v => {
         <div class="res ok">root ≈ {{ fmt(r.root, 8) }}</div>
         <div class="note">f(root) = {{ fmt(r.fx) }} · {{ r.iters }} iterations</div>
       </template>
+      <div v-if="r.warn" class="er">⚠ {{ r.warn }}</div>
     </template>
     <template v-else-if="isValue">
       <div class="res ok">{{ r.label }} = {{ fmt(r.value, 8) }}</div>

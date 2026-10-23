@@ -1,7 +1,12 @@
 <script setup>
 import { computed } from 'vue'
+import { examplePoints } from '../core/points.js'
+import { isBlank } from '../core/validate.js'
 const m = defineModel({ required: true }) // { k: จำนวนตัวแปร x, rows: [[x1..xk, y], ...] }
-const props = defineProps({ multi: Boolean })
+const props = defineProps({ multi: Boolean, invalid: Boolean }) // invalid = กดคำนวณแล้วข้อมูลไม่ครบ
+const ex = computed(() => examplePoints(props.multi))
+const ph = (i, j) => { const r = ex.value[i]; return r ? String(j === m.value.k ? r[r.length - 1] : r[j] ?? '') : '' }
+const bad = (i, j) => props.invalid && isBlank(m.value.rows[i][j]) && (i < 2 || m.value.rows[i].some(v => !isBlank(v)))
 const head = computed(() => (props.multi ? [...Array.from({ length: m.value.k }, (_, i) => `x${i + 1}`), 'y'] : ['x', 'y']))
 const setK = v => {
   const k = Math.max(1, Math.min(5, parseInt(v) || 1))
@@ -20,7 +25,7 @@ const delRow = i => m.value.rows.length > 2 && m.value.rows.splice(i, 1)
   <div class="pts" :style="{ gridTemplateColumns: `repeat(${m.k + 1}, 76px) 32px` }">
     <div v-for="h in head" :key="h" class="cap">{{ h }}</div><div />
     <template v-for="(row, i) in m.rows" :key="i">
-      <input v-for="(_, j) in row" :key="j" v-model="m.rows[i][j]" inputmode="decimal" style="text-align: center" />
+      <input v-for="(_, j) in row" :key="j" v-model="m.rows[i][j]" :placeholder="ph(i, j)" :class="{ bad: bad(i, j) }" inputmode="decimal" style="text-align: center" />
       <button class="sm" title="ลบแถว" @click="delRow(i)">✕</button>
     </template>
   </div>

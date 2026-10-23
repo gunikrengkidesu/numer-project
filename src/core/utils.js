@@ -12,5 +12,5 @@ export class Calculus {
   static d1(f, x, h = 1e-5) { return (f(x + h) - f(x - h)) / (2 * h); }
   static d2(f, x, h = 1e-4) { return (f(x + h) - 2 * f(x) + f(x - h)) / (h * h); }
 }
-export const fmt = (n, d = 6) => (typeof n === "number" && isFinite(n)) ? (Math.abs(n) < 1e-4 && n !== 0 ? n.toExponential(3) : +n.toFixed(d)) : String(n);
+export const fmt = (n, d = 6) => (typeof n === "number" && isFinite(n)) ? +n.toFixed(Math.min(d, 6)) : String(n);
 

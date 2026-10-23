@@ -1,5 +1,6 @@
 const grid = (n, f) => Array.from({ length: n }, (_, i) => f(i))
-export const defaultMatrix = () => ({ n: 3, A: [['4', '1', '1'], ['1', '5', '2'], ['1', '2', '6']], b: ['6', '8', '9'], x0: ['', '', ''] })
+export const EXAMPLE = { A: [[4, 1, 1], [1, 5, 2], [1, 2, 6]], b: [6, 8, 9] } // แสดงเป็น placeholder
+export const defaultMatrix = () => ({ n: 3, A: grid(3, () => grid(3, () => '')), b: grid(3, () => ''), x0: grid(3, () => '') })
 
 export function resizeMatrix(m, n) {
   n = Math.max(2, Math.min(8, parseInt(n) || 3))

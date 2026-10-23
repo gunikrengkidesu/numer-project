@@ -17,31 +17,69 @@ export class LinearMethod {
   solve() { this.run(); const last = this.rows[this.rows.length - 1]; return { kind: "linear", x: this.x, iters: this.rows.length, rows: this.rows, warn: this.warn, converged: last && last.error < this.tol }; }
 }
 export class Jacobi extends LinearMethod {
+  static errorOnly = true
+  static fields = [["error", "error", "0.000001"]]
+  constructor(p) {
+    super({ ...p, tol: p.error ?? p.tol, max: 10000 })
+    this.tol = +(p.error ?? p.tol)
+    if (!isFinite(this.tol) || this.tol <= 0) throw new Error("error ต้องมากกว่า 0")
+    this.p = { ...this.p, error: this.tol }
+  }
   run() {
     if (!this.diagDominant()) this.warn = "A ไม่ใช่ diagonally dominant — อาจไม่ลู่เข้า";
     let x = [...this.x];
     for (let k = 1; k <= this.max; k++) {
-      const xn = x.map((_, i) => (this.b[i] - this.A[i].reduce((s, a, j) => j === i ? s : s + a * x[j], 0)) / this.A[i][i]);
-      const e = this.norm(xn, x); this.record(k, xn, e); x = xn;
-      if (e < this.tol || !x.every(isFinite)) break;
+      const old = [...x]
+      const xn = x.map((_, i) => (this.b[i] - this.A[i].reduce((s, a, j) => j === i ? s : s + a * old[j], 0)) / this.A[i][i]);
+      const errors = xn.map((v, i) => v === 0 ? Math.abs(v - old[i]) : Math.abs((v - old[i]) / v))
+      const e = Math.max(...errors)
+      const row = { iteration: k }
+      xn.forEach((v, i) => { row[`x${i + 1}`] = v })
+      row.error = e
+      Object.defineProperty(row, 'i', { value: k })
+      this.rows.push(row)
+      x = xn;
+      if (e <= this.tol || !x.every(isFinite)) break;
     }
     this.x = x;
   }
 }
 export class GaussSeidel extends LinearMethod {
+  static errorOnly = true
+  static fields = [["error", "error", "0.000001"]]
+  constructor(p) {
+    super({ ...p, tol: p.error ?? p.tol, max: 10000 })
+    this.tol = +(p.error ?? p.tol)
+    if (!isFinite(this.tol) || this.tol <= 0) throw new Error("error ต้องมากกว่า 0")
+    this.p = { ...this.p, error: this.tol }
+  }
   run() {
     if (!this.diagDominant()) this.warn = "A ไม่ใช่ diagonally dominant — อาจไม่ลู่เข้า";
     let x = [...this.x];
     for (let k = 1; k <= this.max; k++) {
       const old = [...x];
       for (let i = 0; i < this.n; i++) x[i] = (this.b[i] - this.A[i].reduce((s, a, j) => j === i ? s : s + a * x[j], 0)) / this.A[i][i];
-      const e = this.norm(x, old); this.record(k, [...x], e);
-      if (e < this.tol || !x.every(isFinite)) break;
+      const errors = x.map((v, i) => v === 0 ? Math.abs(v - old[i]) : Math.abs((v - old[i]) / v))
+      const e = Math.max(...errors)
+      const row = { iteration: k }
+      x.forEach((v, i) => { row[`x${i + 1}`] = v })
+      row.error = e
+      Object.defineProperty(row, 'i', { value: k })
+      this.rows.push(row)
+      if (e <= this.tol || !x.every(isFinite)) break;
     }
     this.x = x;
   }
 }
 export class ConjugateGradient extends LinearMethod {
+  static errorOnly = true
+  static fields = [["error", "error", "0.000001"]]
+  constructor(p) {
+    super({ ...p, tol: p.error ?? p.tol, max: 10000 })
+    this.tol = +(p.error ?? p.tol)
+    if (!isFinite(this.tol) || this.tol <= 0) throw new Error("error ต้องมากกว่า 0")
+    this.p = { ...this.p, error: this.tol }
+  }
   mv(v) { return this.A.map(r => r.reduce((s, a, j) => s + a * v[j], 0)); }
   dot(a, b) { return a.reduce((s, v, i) => s + v * b[i], 0); }
   run() {
@@ -52,8 +90,13 @@ export class ConjugateGradient extends LinearMethod {
       const Ap = this.mv(p), alpha = rs / this.dot(p, Ap), xn = x.map((v, i) => v + alpha * p[i]);
       r = r.map((v, i) => v - alpha * Ap[i]);
       const rn = this.dot(r, r), e = Math.sqrt(rn);
-      this.record(k, xn, e); x = xn;
-      if (e < this.tol || !isFinite(e)) break;
+      const row = { iteration: k }
+      xn.forEach((v, i) => { row[`x${i + 1}`] = v })
+      row.error = e
+      Object.defineProperty(row, 'i', { value: k })
+      this.rows.push(row)
+      x = xn;
+      if (e <= this.tol || !isFinite(e)) break;
       p = r.map((v, i) => v + (rn / rs) * p[i]); rs = rn;
     }
     this.x = x;
@@ -81,14 +124,14 @@ export class DirectMethod extends LinearMethod {
   }
   forward(L, b) { const y = []; for (let i = 0; i < this.n; i++) { let s = b[i]; for (let j = 0; j < i; j++) s -= L[i][j] * y[j]; y[i] = s / L[i][i] } return y }
   backward(U, y) { const x = []; for (let i = this.n - 1; i >= 0; i--) { let s = y[i]; for (let j = i + 1; j < this.n; j++) s -= U[i][j] * x[j]; x[i] = s / U[i][i] } return x }
-  jordan(M, label) { // Gauss-Jordan บน M (n × m)
+  jordan(M, label, record = true) { // Gauss-Jordan บน M (n × m)
     const n = this.n
     for (let k = 0; k < n; k++) {
       let p = k; for (let i = k + 1; i < n; i++) if (Math.abs(M[i][k]) > Math.abs(M[p][k])) p = i
-      if (p !== k) { [M[p], M[k]] = [M[k], M[p]]; this.log(`สลับแถว R${k + 1} ↔ R${p + 1}`, M) }
+      if (p !== k) { [M[p], M[k]] = [M[k], M[p]]; if (record) this.log(`สลับแถว R${k + 1} ↔ R${p + 1}`, M) }
       const d = M[k][k]; M[k] = M[k].map(v => v / d)
       for (let i = 0; i < n; i++) if (i !== k) { const f = M[i][k]; M[i] = M[i].map((v, j) => v - f * M[k][j]) }
-      this.log(`${label} คอลัมน์ ${k + 1}`, M)
+      if (record) this.log(`${label} คอลัมน์ ${k + 1}`, M)
     }
   }
   solve() { this.run(); return { kind: 'linear', direct: true, x: this.x, steps: this.steps, rows: [], iters: 0, warn: '', converged: true } }
@@ -97,11 +140,9 @@ export class DirectMethod extends LinearMethod {
 export class Cramer extends DirectMethod {
   run() {
     this.check(); const D = DirectMethod.det(this.A)
-    this.log('เมทริกซ์ A', this.A, `det(A) = ${+D.toFixed(8)}`)
     this.x = this.A.map((_, c) => {
       const Ai = this.A.map((r, i) => r.map((v, j) => (j === c ? this.b[i] : v)))
       const d = DirectMethod.det(Ai)
-      this.log(`A${c + 1} (แทนคอลัมน์ ${c + 1} ด้วย b)`, Ai, `det(A${c + 1}) = ${+d.toFixed(8)} → x${c + 1} = ${+(d / D).toFixed(8)}`)
       return d / D
     })
   }
@@ -109,31 +150,27 @@ export class Cramer extends DirectMethod {
 export class GaussElimination extends DirectMethod {
   run() {
     this.check(); const n = this.n, M = this.A.map((r, i) => [...r, this.b[i]])
-    this.log('Augmented matrix [A | b]', M)
     for (let k = 0; k < n - 1; k++) {
       let p = k; for (let i = k + 1; i < n; i++) if (Math.abs(M[i][k]) > Math.abs(M[p][k])) p = i
-      if (p !== k) { [M[p], M[k]] = [M[k], M[p]]; this.log(`สลับแถว R${k + 1} ↔ R${p + 1}`, M) }
+      if (p !== k) [M[p], M[k]] = [M[k], M[p]]
       for (let i = k + 1; i < n; i++) { const f = M[i][k] / M[k][k]; M[i] = M[i].map((v, j) => v - f * M[k][j]) }
-      this.log(`Forward elimination คอลัมน์ ${k + 1}`, M)
     }
     this.x = this.backward(M.map(r => r.slice(0, n)), M.map(r => r[n]))
-    this.log('Back substitution', null, 'x = [' + this.x.map(v => +v.toFixed(8)).join(', ') + ']')
   }
 }
 export class GaussJordan extends DirectMethod {
   run() {
     this.check(); const M = this.A.map((r, i) => [...r, this.b[i]])
-    this.log('Augmented matrix [A | b]', M); this.jordan(M, 'Pivot/กำจัด')
+    this.jordan(M, 'Pivot/กำจัด', false)
     this.x = M.map(r => r[this.n])
   }
 }
 export class Inversion extends DirectMethod {
   run() {
     this.check(); const n = this.n, M = this.A.map((r, i) => [...r, ...Array.from({ length: n }, (_, j) => (i === j ? 1 : 0))])
-    this.log('[A | I]', M); this.jordan(M, 'Gauss-Jordan')
-    const inv = M.map(r => r.slice(n)); this.log('A⁻¹', inv)
+    this.jordan(M, 'Gauss-Jordan', false)
+    const inv = M.map(r => r.slice(n))
     this.x = inv.map(r => r.reduce((s, v, j) => s + v * this.b[j], 0))
-    this.log('x = A⁻¹ b', null, '[' + this.x.map(v => +v.toFixed(8)).join(', ') + ']')
   }
 }
 export class LUDecomposition extends DirectMethod {
@@ -145,10 +182,8 @@ export class LUDecomposition extends DirectMethod {
       if (p !== k) { [U[p], U[k]] = [U[k], U[p]];[P[p], P[k]] = [P[k], P[p]]; for (let j = 0; j < k; j++) [L[p][j], L[k][j]] = [L[k][j], L[p][j]] }
       for (let i = k + 1; i < n; i++) { L[i][k] = U[i][k] / U[k][k]; for (let j = k; j < n; j++) U[i][j] -= L[i][k] * U[k][j] }
     }
-    if (P.some((v, i) => v !== i)) this.log('P (permutation: PA = LU)', P.map(r => Array.from({ length: n }, (_, j) => (j === r ? 1 : 0))))
-    this.log('L', L); this.log('U', U)
-    const y = this.forward(L, P.map(i => this.b[i])); this.log('Ly = Pb → y', y.map(v => [v]))
-    this.x = this.backward(U, y); this.log('Ux = y → x', this.x.map(v => [v]))
+    const y = this.forward(L, P.map(i => this.b[i]))
+    this.x = this.backward(U, y)
   }
 }
 export class Cholesky extends DirectMethod {
@@ -160,8 +195,8 @@ export class Cholesky extends DirectMethod {
       let s = this.A[i][j]; for (let k = 0; k < j; k++) s -= L[i][k] * L[j][k]
       if (i === j) { if (s <= 1e-12) throw new Error('A ไม่เป็น positive definite — ใช้ Cholesky ไม่ได้'); L[i][i] = Math.sqrt(s) } else L[i][j] = s / L[j][j]
     }
-    const LT = L.map((_, i) => L.map(r => r[i])); this.log('L (A = L Lᵀ)', L); this.log('Lᵀ', LT)
-    const y = this.forward(L, this.b); this.log('Ly = b → y', y.map(v => [v]))
-    this.x = this.backward(LT, y); this.log('Lᵀx = y → x', this.x.map(v => [v]))
+    const LT = L.map((_, i) => L.map(r => r[i]))
+    const y = this.forward(L, this.b)
+    this.x = this.backward(LT, y)
   }
 }

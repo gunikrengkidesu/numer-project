@@ -5,9 +5,10 @@ export function parsePoints(s, cols) {
     throw new Error('ข้อมูลจุดไม่ถูกต้อง: ต้องเป็นตัวเลข และมีจำนวนคอลัมน์เท่ากันทุกแถว')
   return rows
 }
-export const defaultPoints = multi => multi
-  ? { k: 2, rows: [['1', '1', '6'], ['2', '1', '8'], ['1', '2', '9'], ['3', '2', '13'], ['2', '3', '14.5']] }
-  : { k: 1, rows: [['0', '1'], ['1', '3'], ['2', '2'], ['3', '5']] }
+export const examplePoints = multi => multi // แสดงเป็น placeholder
+  ? [[1, 1, 6], [2, 1, 8], [1, 2, 9], [3, 2, 13], [2, 3, 14.5]]
+  : [[0, 1], [1, 3], [2, 2], [3, 5]]
+export const defaultPoints = multi => ({ k: multi ? 2 : 1, rows: examplePoints(multi).map(r => r.map(() => '')) })
 export const serializePoints = m =>
   m.rows.filter(r => r.some(v => String(v).trim() !== '')).map(r => r.map(v => String(v).trim() || 'NaN').join(' ')).join('\n')
 export function pointsFromString(s) {

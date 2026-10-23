@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node tests/core.test.js && node tests/newMethods.test.js && node tests/iterationSeries.test.js && node tests/api.test.js",
+    "test": "node tests/core.test.js && node tests/newMethods.test.js && node tests/iterationSeries.test.js && node tests/api.test.js && node tests/validate.test.js",
     "server": "node server/index.js",
     "start": "npm run build && node server/index.js"
   },

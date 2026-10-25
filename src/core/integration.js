@@ -15,7 +15,7 @@ export class IntegralMethod {
     const value = k * fs.reduce((s, v, i) => s + w[i] * v, 0)
     if (!isFinite(value)) throw new Error('f(x) หาค่าไม่ได้ในช่วงนี้')
     return {
-      kind: 'value', label: `I ≈ ∫[${this.a}, ${this.b}] f(x)dx`, value, warn: '', notes: [`h = ${+h.toFixed(8)} · n = ${n} ช่วง`],
+      kind: 'value', label: `I ≈ ∫[${this.a}, ${this.b}] f(x)dx`, value, warn: '', notes: [`h = ${+h.toFixed(8)} · n = ${n} ช่วง`], answerOnly: true,
       rows: xs.map((x, i) => ({ i, x, 'f(x)': fs[i], weight: w[i] })), plot: { f: this.f, a: this.a, b: this.b, points: xs.map((x, i) => [x, fs[i]]) }
     }
   }

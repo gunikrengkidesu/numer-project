@@ -17,7 +17,7 @@ export class DiffMethod {
     const ref = order === 1 ? Calculus.d1(f, x) : Calculus.d2(f, x)
     const r = Math.max(1, 5 * Math.abs(h))
     return {
-      kind: 'value', label: `f${order === 1 ? '′' : '″'}(${x})`, value, rows, warn: '',
+      kind: 'value', label: `f${order === 1 ? '′' : '″'}(${x})`, value, rows, warn: '', answerOnly: true,
       notes: [`ค่าอ้างอิง (central, h เล็กมาก) ≈ ${+ref.toPrecision(8)} · คลาดเคลื่อน ≈ ${Math.abs(value - ref).toExponential(2)}`],
       plot: { f, a: x - r, b: x + r, points: rows.map(q => [q.x_i, q['f(x_i)']]), mark: [x, f(x)] }
     }

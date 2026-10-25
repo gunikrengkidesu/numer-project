@@ -22,7 +22,7 @@ const delRow = i => m.value.rows.length > 2 && m.value.rows.splice(i, 1)
     <input type="number" min="1" max="5" style="width: 90px" :value="m.k" @change="setK($event.target.value)" />
   </template>
   <label>ข้อมูล ({{ m.rows.length }} จุด)</label>
-  <div class="pts" :style="{ gridTemplateColumns: `repeat(${m.k + 1}, 76px) 32px` }">
+  <div class="pts" :style="{ gridTemplateColumns: `repeat(${m.k + 1}, var(--point-cell)) 32px` }">
     <div v-for="h in head" :key="h" class="cap">{{ h }}</div><div />
     <template v-for="(row, i) in m.rows" :key="i">
       <input v-for="(_, j) in row" :key="j" v-model="m.rows[i][j]" :placeholder="ph(i, j)" :class="{ bad: bad(i, j) }" inputmode="decimal" style="text-align: center" />

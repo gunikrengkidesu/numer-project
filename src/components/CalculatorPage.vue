@@ -11,7 +11,7 @@ import PointsInput from '../components/PointsInput.vue'
 import ResultView from '../components/ResultView.vue'
 
 const cat = ref('Root of Equation')
-const method = ref('Bisection')
+const method = ref('Graphical')
 const vals = reactive({})
 const matrix = ref(defaultMatrix())
 const points = ref(defaultPoints(false))
